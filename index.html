@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>UltraGuideAI</title>
+
+    <!-- Fonts - Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" integrity="sha512-16esztaSRplJROstbIIdwX3N97V1+pZvV33ABoG1H2OyTttBxEGkTsoIVsiP1iaTtM8b3+hu2kB6pQ4Clr5yug==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" integrity="sha512-Ic9xkERjyZ1xgJ5svx3y0u3xnvfTfhPHYKMWujmCAtjTpU4E3oCJ0ZgD8wdJrIngtM2xWa2iQ2jPThn15GQaCw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLxQsGjN6wnA/sIOn1BvUv/3b3Kdx0AWz2n0tXqeJ1Ka4zVg3fLU1C8w2E2q2t6jH0g5D/DDz8d7g5q3z3z3z3w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        'neon-blue': '#00f3ff',
+                        'neon-purple': '#bc13fe',
+                        'neon-pink': '#ff006e',
+                        'deep-space': '#050508',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: #000; color: #ffffff; overflow-x: hidden; }
+
+        /* Intro Sequence */
+        #intro-sequence { position: fixed; inset: 0; background: #000; z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center; perspective: 1000px; }
+        .intro-bg { position: absolute; inset: 0; overflow: hidden; }
+        .intro-grid { position: absolute; inset: -50%; background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px); background-size: 100px 100px; transform: perspective(500px) rotateX(60deg); animation: intro-grid-move 20s linear infinite; opacity: 0; }
+        @keyframes intro-grid-move { 0% { transform: perspective(500px) rotateX(60deg) translateY(0); } 100% { transform: perspective(500px) rotateX(60deg) translateY(100px); } }
+        .light-beam { position: absolute; width: 2px; height: 200%; background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.5), transparent); top: -50%; animation: beam-sweep 3s ease-in-out infinite; opacity: 0; }
+        .light-beam:nth-child(1) { left: 20%; animation-delay: 0s; }
+        .light-beam:nth-child(2) { left: 50%; animation-delay: 0.5s; }
+        .light-beam:nth-child(3) { left: 80%; animation-delay: 1s; }
+        @keyframes beam-sweep { 0%, 100% { transform: translateY(0) scaleY(0); opacity: 0; } 50% { transform: translateY(0) scaleY(1); opacity: 1; } }
+        .domain-container { position: relative; z-index: 10; text-align: center; }
+        .domain-text { font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 10vw, 8rem); font-weight: 700; letter-spacing: -0.02em; position: relative; display: inline-block; }
+        .domain-part { display: inline-block; position: relative; }
+        .domain-ultra { color: #fff; text-shadow: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3), 0 0 40px rgba(0, 243, 255, 0.2); }
+        .domain-guide { color: #fff; text-shadow: 0 0 10px rgba(188, 19, 254, 0.5), 0 0 20px rgba(188, 19, 254, 0.3), 0 0 40px rgba(188, 19, 254, 0.2); }
+        .domain-ai { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 110, 0.5), 0 0 20px rgba(255, 0, 110, 0.3), 0 0 40px rgba(255, 0, 110, 0.2); }
+        .domain-com { color: #666; font-weight: 300; margin-left: 0.1em; }
+        .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #00f3ff, transparent); box-shadow: 0 0 20px #00f3ff; opacity: 0; }
+        .burst-particle { position: absolute; width: 4px; height: 4px; background: #00f3ff; border-radius: 50%; pointer-events: none; }
+        .intro-progress { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); width: 200px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; opacity: 0; }
+        .intro-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #00f3ff, #bc13fe); box-shadow: 0 0 10px #00f3ff; }
+        .intro-status { position: absolute; bottom: calc(15% + 15px); left: 50%; transform: translateX(-50%); font-size: 12px; color: #666; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0; }
+
+        /* Main Interface */
+        #main-interface { position: fixed; inset: 0; opacity: 0; visibility: hidden; background: #050508; overflow-y: auto; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0f; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #00f3ff, #bc13fe); border-radius: 3px; }
+        .nav-glass { background: rgba(5, 5, 8, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.05); transform: translateY(-100%); }
+        .hero-section { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; }
+        .cyber-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px); background-size: 80px 80px; transform: perspective(1000px) rotateX(60deg); transform-origin: center top; animation: grid-move 30s linear infinite; pointer-events: none; opacity: 0; }
+        @keyframes grid-move { 0% { transform: perspective(1000px) rotateX(60deg) translateY(0); } 100% { transform: perspective(1000px) rotateX(60deg) translateY(80px); } }
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0; animation: float-orb 20s ease-in-out infinite; }
+        .orb-1 { width: 600px; height: 600px; background: #bc13fe; top: -200px; right: -100px; animation-delay: 0s; }
+        .orb-2 { width: 500px; height: 500px; background: #00f3ff; bottom: -150px; left: -100px; animation-delay: -5s; }
+        .orb-3 { width: 400px; height: 400px; background: #ff006e; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -10s; }
+        @keyframes float-orb { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -30px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.9); } }
+        .main-card { background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(30px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 243, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); overflow: hidden; position: relative; transform: scale(0.8); opacity: 0; }
+        .main-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(0, 243, 255, 0.1) 0%, transparent 50%, rgba(188, 19, 254, 0.1) 100%); pointer-events: none; }
+        .animated-border { position: absolute; inset: 0; border-radius: 24px; padding: 2px; background: linear-gradient(90deg, #00f3ff, #bc13fe, #ff006e, #00f3ff); background-size: 300% 100%; animation: border-gradient 3s linear infinite; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0; }
+        @keyframes border-gradient { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+        .search-wrapper { position: relative; transform: translateY(30px); opacity: 0; }
+        .search-bar { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 6px; display: flex; align-items: center; gap: 12px; transition: all 0.3s ease; }
+        .search-bar:focus-within { border-color: rgba(0, 243, 255, 0.5); box-shadow: 0 0 30px rgba(0, 243, 255, 0.2); }
+        .search-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 18px; padding: 12px 16px; outline: none; font-family: inherit; }
+        .search-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .search-btn { width: 48px; height: 48px; background: linear-gradient(135deg, #00f3ff 0%, #0080ff 100%); border: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0, 243, 255, 0.4); transform: scale(0); }
+        .search-btn:hover { transform: scale(1.05) rotate(5deg); box-shadow: 0 6px 30px rgba(0, 243, 255, 0.6); }
+        .glow-text { text-shadow: 0 0 20px currentColor; }
+        .feature-tag { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; font-size: 14px; transition: all 0.3s ease; cursor: pointer; transform: translateY(20px); opacity: 0; }
+        .feature-tag:hover { background: rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.3); transform: translateY(-2px); }
+        #brain-canvas { position: absolute; top: 50%; left: 70%; transform: translate(-50%, -50%) scale(0); width: 600px; height: 600px; pointer-events: none; opacity: 0; }
+        .particle { position: absolute; width: 4px; height: 4px; background: #00f3ff; border-radius: 50%; box-shadow: 0 0 10px #00f3ff, 0 0 20px #bc13fe; pointer-events: none; }
+        .btn-primary { position: relative; background: linear-gradient(90deg, #00f3ff, #0080ff); border: none; color: #000; font-weight: 700; padding: 16px 32px; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; cursor: pointer; transform: translateY(20px); opacity: 0; }
+        .btn-primary::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transition: left 0.5s; }
+        .btn-primary:hover::before { left: 100%; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0, 243, 255, 0.4); }
+        .btn-secondary { background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600; padding: 16px 32px; border-radius: 12px; transition: all 0.3s ease; cursor: pointer; transform: translateY(20px); opacity: 0; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.4); }
+        .cursor-glow { position: fixed; width: 400px; height: 400px; background: radial-gradient(circle, rgba(0, 243, 255, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none; z-index: 9999; opacity: 0; transition: opacity 0.3s; }
+        .course-card { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; cursor: pointer; transform: translateX(-30px); opacity: 0; }
+        .course-card:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(-8px); }
+        .course-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+        .neon-line { height: 2px; background: linear-gradient(90deg, transparent, #00f3ff, #bc13fe, transparent); background-size: 200% 100%; animation: line-move 3s linear infinite; opacity: 0; }
+        @keyframes line-move { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+        .hero-title-line { transform: translateY(50px); opacity: 0; }
+        .hero-subtitle { transform: translateY(30px); opacity: 0; }
+        .hero-badge { transform: scale(0); opacity: 0; }
+        .scroll-indicator { opacity: 0; transform: translateY(20px); }
+        .hover-card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .hover-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); }
+
+        /* Social Media with Authentic Colors */
+        .social-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; transition: all 0.3s ease; cursor: pointer; text-decoration: none; color: inherit; }
+        .social-item:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(5px); border-color: rgba(255, 255, 255, 0.2); }
+        .social-icon-box { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: all 0.3s ease; }
+        .social-info { display: flex; flex-direction: column; gap: 2px; }
+        .social-platform { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+        .social-username { font-size: 15px; font-weight: 600; color: #fff; font-family: 'Space Grotesk', sans-serif; }
+
+        /* TikTok - Black bg, White icon */
+        .social-tiktok .social-icon-box { background: #000000; color: #ffffff; border: 1px solid rgba(255,255,255,0.3); }
+        .social-tiktok:hover .social-icon-box { border-color: #ff0050; box-shadow: 0 0 15px rgba(255, 0, 80, 0.4); }
+
+        /* Instagram - Gradient bg, White icon */
+        .social-instagram .social-icon-box { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: #ffffff; }
+        .social-instagram:hover .social-icon-box { box-shadow: 0 0 20px rgba(225, 48, 108, 0.5); }
+
+        /* YouTube - Red bg, White icon */
+        .social-youtube .social-icon-box { background: #ff0000; color: #ffffff; }
+        .social-youtube:hover .social-icon-box { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
+
+        /* Email - Gmail colors */
+        .social-email .social-icon-box { background: #ea4335; color: #ffffff; }
+        .social-email:hover .social-icon-box { box-shadow: 0 0 20px rgba(234, 67, 53, 0.4); }
+
+        .social-section { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+        .social-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; color: #666; margin-bottom: 16px; }
+        .social-list { display: flex; flex-direction: column; gap: 10px; }
+
+        /* Footer */
+        .footer-social-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; text-decoration: none; }
+        .footer-social-icon:hover { transform: translateY(-3px) scale(1.1); }
+        .footer-social-icon.tiktok { background: #000000; }
+        .footer-social-icon.tiktok:hover { border-color: #ff0050; box-shadow: 0 0 15px rgba(255, 0, 80, 0.4); }
+        .footer-social-icon.instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); border-color: transparent; }
+        .footer-social-icon.instagram:hover { box-shadow: 0 0 20px rgba(225, 48, 108, 0.5); }
+        .footer-social-icon.youtube { background: #ff0000; border-color: #ff0000; }
+        .footer-social-icon.youtube:hover { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); }
+        .footer-social-icon.email { background: #ea4335; border-color: #ea4335; }
+        .footer-social-icon.email:hover { box-shadow: 0 0 20px rgba(234, 67, 53, 0.4); }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .domain-text { font-size: clamp(2rem, 8vw, 4rem); }
+            #brain-canvas { display: none; }
+            .hero-section { min-height: auto; padding: 100px 0; }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+
+    <!-- INTRO SEQUENCE -->
+    <div id="intro-sequence">
+        <div class="intro-bg">
+            <div class="intro-grid" id="intro-grid"></div>
+            <div class="light-beam"></div>
+            <div class="light-beam"></div>
+            <div class="light-beam"></div>
+        </div>
+        <div class="scan-line" id="scan-line"></div>
+        <div class="domain-container">
+            <h1 class="domain-text" id="domain-text">
+                <span class="domain-part domain-ultra" id="domain-ultra">Ultra</span><span class="domain-part domain-guide" id="domain-guide">Guide</span><span class="domain-part domain-ai" id="domain-ai">AI</span><span class="domain-part domain-com" id="domain-com">.com</span>
+            </h1>
+        </div>
+        <div class="intro-status" id="intro-status">Initializing System</div>
+        <div class="intro-progress" id="intro-progress">
+            <div class="intro-progress-bar" id="intro-progress-bar"></div>
+        </div>
+        <div id="burst-container"></div>
+    </div>
+
+    <!-- MAIN INTERFACE -->
+    <div id="main-interface">
+        <div class="cursor-glow" id="cursor-glow"></div>
+
+        <!-- Navigation -->
+        <nav class="fixed top-0 left-0 right-0 z-50 nav-glass transition-all duration-300" id="navbar">
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="#" class="flex items-center gap-3 group">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-black font-bold text-xl group-hover:scale-110 transition-transform duration-300">U</div>
+                        <span class="font-bold text-xl tracking-tight whitespace-nowrap">Ultra<span class="text-neon-blue">Guide</span><span class="text-neon-purple">AI</span></span>
+                    </a>
+                    <div class="hidden md:flex items-center gap-8">
+                        <a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors relative group">Features<span class="absolute bottom-0 left-0 w-0 h-0.5 bg-neon-blue group-hover:w-full transition-all duration-300"></span></a>
+                        <a href="#tools" class="text-sm text-gray-400 hover:text-white transition-colors relative group">Tools<span class="absolute bottom-0 left-0 w-0 h-0.5 bg-neon-purple group-hover:w-full transition-all duration-300"></span></a>
+                        <a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors relative group">Pricing<span class="absolute bottom-0 left-0 w-0 h-0.5 bg-neon-pink group-hover:w-full transition-all duration-300"></span></a>
+                    </div>
+                    <button class="btn-primary text-sm ml-4" style="transform: translateY(0); opacity: 1;">Get Started</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero-section relative">
+            <div class="cyber-grid" id="cyber-grid"></div>
+            <div class="orb orb-1" id="orb-1"></div>
+            <div class="orb orb-2" id="orb-2"></div>
+            <div class="orb orb-3" id="orb-3"></div>
+            <div id="particles-container" class="absolute inset-0 pointer-events-none"></div>
+            <canvas id="brain-canvas"></canvas>
+
+            <div class="relative z-10 w-full max-w-7xl mx-auto px-6 pt-32 pb-20">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+
+                    <!-- Left Content -->
+                    <div>
+                        <div class="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8">
+                            <span class="w-2 h-2 rounded-full bg-neon-blue animate-ping"></span>
+                            <span class="text-sm text-gray-300">Next Generation AI Platform</span>
+                        </div>
+
+                        <h1 class="text-5xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight">
+                            <span class="hero-title-line block text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">Discover</span>
+                            <span class="hero-title-line block text-transparent bg-clip-text bg-gradient-to-r from-neon-blue via-neon-purple to-neon-pink glow-text">The Future</span>
+                        </h1>
+
+                        <p class="hero-subtitle text-xl text-gray-400 mb-10 max-w-xl leading-relaxed">Your comprehensive platform for mastering artificial intelligence. Learn, experiment, and develop your skills with the latest technologies.</p>
+
+                        <div class="search-wrapper mb-8">
+                            <div class="search-bar">
+                                <input type="text" class="search-input" placeholder="Search for AI tools, courses, guides..." id="search-input">
+                                <button class="search-btn" onclick="handleSearch()">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3 mb-10">
+                            <span class="feature-tag" style="transition-delay: 0.1s;"><span>🧠</span><span>Neural Networks</span></span>
+                            <span class="feature-tag" style="transition-delay: 0.2s;"><span>⚡</span><span>Machine Learning</span></span>
+                            <span class="feature-tag" style="transition-delay: 0.3s;"><span>🚀</span><span>Virtual Reality</span></span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-4">
+                            <button class="btn-primary flex items-center gap-2" style="transition-delay: 0.4s;">Start Your Journey<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+                            <button class="btn-secondary flex items-center gap-2" style="transition-delay: 0.5s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Watch Demo</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Content - Social Media & Courses -->
+                    <div class="relative">
+                        <div class="main-card p-8 relative" id="main-card">
+                            <div class="animated-border" id="animated-border"></div>
+
+                            <div class="relative z-10">
+                                <!-- Course Cards -->
+                                <div class="space-y-4 mb-6">
+                                    <div class="course-card" style="transition-delay: 0.1s;">
+                                        <div class="course-icon bg-gradient-to-br from-cyan-500/20 to-blue-600/20">💬</div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-white">Conversational AI Mastery</div>
+                                            <div class="text-sm text-gray-400">Master the art of AI dialogue systems</div>
+                                        </div>
+                                        <div class="text-neon-blue opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-2">→</div>
+                                    </div>
+
+                                    <div class="course-card" style="transition-delay: 0.2s;">
+                                        <div class="course-icon bg-gradient-to-br from-purple-500/20 to-pink-600/20">🎨</div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-white">Creative AI Design</div>
+                                            <div class="text-sm text-gray-400">Advanced generative art techniques</div>
+                                        </div>
+                                        <div class="text-neon-purple opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-2">→</div>
+                                    </div>
+
+                                    <div class="course-card" style="transition-delay: 0.3s;">
+                                        <div class="course-icon bg-gradient-to-br from-orange-500/20 to-red-600/20">🔮</div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-white">Language Models Deep Dive</div>
+                                            <div class="text-sm text-gray-400">Understanding transformer architectures</div>
+                                        </div>
+                                        <div class="text-neon-pink opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-2">→</div>
+                                    </div>
+                                </div>
+
+                                <div class="neon-line mb-6" id="neon-line"></div>
+
+                                <!-- Social Media Section with Authentic Colors -->
+                                <div class="social-section">
+                                    <div class="social-title">Follow Us @ultraGuideai</div>
+
+                                    <div class="social-list">
+                                        <!-- TikTok -->
+                                        <a href="https://tiktok.com/@ultraGuideai" target="_blank" rel="noopener noreferrer" class="social-item social-tiktok">
+                                            <div class="social-icon-box"><i class="fab fa-tiktok"></i></div>
+                                            <div class="social-info">
+                                                <span class="social-platform">TikTok</span>
+                                                <span class="social-username">@ultraGuideai</span>
+                                            </div>
+                                        </a>
+
+                                        <!-- Instagram -->
+                                        <a href="https://instagram.com/ultraGuideai" target="_blank" rel="noopener noreferrer" class="social-item social-instagram">
+                                            <div class="social-icon-box"><i class="fab fa-instagram"></i></div>
+                                            <div class="social-info">
+                                                <span class="social-platform">Instagram</span>
+                                                <span class="social-username">@ultraGuideai</span>
+                                            </div>
+                                        </a>
+
+                                        <!-- YouTube -->
+                                        <a href="https://youtube.com/@ultraGuideai" target="_blank" rel="noopener noreferrer" class="social-item social-youtube">
+                                            <div class="social-icon-box"><i class="fab fa-youtube"></i></div>
+                                            <div class="social-info">
+                                                <span class="social-platform">YouTube</span>
+                                                <span class="social-username">@ultraGuideai</span>
+                                            </div>
+                                        </a>
+
+                                        <!-- Email -->
+                                        <a href="mailto:ultraGuideai@gmail.com" class="social-item social-email">
+                                            <div class="social-icon-box"><i class="fas fa-envelope"></i></div>
+                                            <div class="social-info">
+                                                <span class="social-platform">Email</span>
+                                                <span class="social-username">ultraGuideai@gmail.com</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-neon-blue to-neon-purple rounded-2xl opacity-20 blur-2xl animate-pulse"></div>
+                        <div class="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-br from-neon-purple to-neon-pink rounded-full opacity-20 blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scroll-indicator absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50">
+                <span class="text-xs tracking-widest uppercase">Scroll Down</span>
+                <div class="w-6 h-10 rounded-full border border-white/20 flex items-start justify-center p-2">
+                    <div class="w-1.5 h-3 bg-neon-blue rounded-full animate-bounce"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="py-32 relative">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6"><span class="text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-neon-purple">Why UltraGuideAI?</span></h2>
+                    <p class="text-gray-400 text-xl max-w-2xl mx-auto">A comprehensive platform combining learning with practical application in the world of artificial intelligence</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="hover-card main-card p-8 text-center" style="transform: scale(1); opacity: 1;">
+                        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-neon-blue/20 to-blue-600/20 flex items-center justify-center text-4xl">🎓</div>
+                        <h3 class="text-2xl font-bold mb-4">Interactive Learning</h3>
+                        <p class="text-gray-400 leading-relaxed">Practical courses with real projects. Learn by doing, not just theory.</p>
+                    </div>
+
+                    <div class="hover-card main-card p-8 text-center" style="transform: scale(1); opacity: 1;">
+                        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-neon-purple/20 to-purple-600/20 flex items-center justify-center text-4xl">🛠️</div>
+                        <h3 class="text-2xl font-bold mb-4">Integrated Tools</h3>
+                        <p class="text-gray-400 leading-relaxed">Try the latest AI tools directly on the platform. No external subscriptions needed.</p>
+                    </div>
+
+                    <div class="hover-card main-card p-8 text-center" style="transform: scale(1); opacity: 1;">
+                        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-neon-pink/20 to-pink-600/20 flex items-center justify-center text-4xl">👥</div>
+                        <h3 class="text-2xl font-bold mb-4">Global Community</h3>
+                        <p class="text-gray-400 leading-relaxed">Connect with thousands of learners worldwide. Share experiences and get support.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-32 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-neon-blue/10 via-neon-purple/10 to-neon-pink/10 blur-3xl"></div>
+            <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+                <h2 class="text-5xl md:text-6xl lg:text-7xl font-black mb-8">Ready for the Future?</h2>
+                <p class="text-xl text-gray-300 mb-12">Join the AI revolution now. Your future starts here.</p>
+                <button class="btn-primary text-lg px-12 py-5" style="transform: translateY(0); opacity: 1;">Start Free →</button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="border-t border-white/10 py-12">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-black font-bold">U</div>
+                    <span class="font-bold text-xl">UltraGuideAI.com</span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <a href="https://tiktok.com/@ultraGuideai" target="_blank" rel="noopener noreferrer" class="footer-social-icon tiktok" title="TikTok - @ultraGuideai"><i class="fab fa-tiktok"></i></a>
+                    <a href="https://instagram.com/ultraGuideai" target="_blank" rel="noopener noreferrer" class="footer-social-icon instagram" title="Instagram - @ultraGuideai"><i class="fab fa-instagram"></i></a>
+                    <a href="https://youtube.com/@ultraGuideai" target="_blank" rel="noopener noreferrer" class="footer-social-icon youtube" title="YouTube - @ultraGuideai"><i class="fab fa-youtube"></i></a>
+                    <a href="mailto:ultraGuideai@gmail.com" class="footer-social-icon email" title="Email - ultraGuideai@gmail.com"><i class="fas fa-envelope"></i></a>
+                </div>
+
+                <p class="text-gray-500">© 2026 All Rights Reserved</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Check if GSAP loaded
+        if (typeof gsap === 'undefined') {
+            console.error('GSAP not loaded');
+            document.getElementById('intro-sequence').style.display = 'none';
+            document.getElementById('main-interface').style.visibility = 'visible';
+            document.getElementById('main-interface').style.opacity = '1';
+        }
+
+        // Intro Animation
+        const introTimeline = gsap.timeline();
+        introTimeline
+            .set('#domain-ultra, #domain-guide, #domain-ai, #domain-com', { opacity: 0, y: 50, rotateX: -90 })
+            .set('.light-beam', { opacity: 0 })
+            .set('#scan-line', { opacity: 0, top: '0%' })
+            .set('#intro-grid', { opacity: 0 })
+            .set('#intro-status', { opacity: 0 })
+            .set('#intro-progress', { opacity: 0 })
+            .to('#intro-grid', { opacity: 1, duration: 1, ease: 'power2.out' })
+            .to('.light-beam', { opacity: 0.5, duration: 0.5, stagger: 0.2 }, '-=0.5')
+            .to('#scan-line', { opacity: 1, top: '100%', duration: 1.5, ease: 'power2.inOut' })
+            .to('#domain-ultra', { opacity: 1, y: 0, rotateX: 0, duration: 0.8, ease: 'back.out(1.7)' })
+            .to('#domain-guide', { opacity: 1, y: 0, rotateX: 0, duration: 0.8, ease: 'back.out(1.7)' }, '-=0.6')
+            .to('#domain-ai', { opacity: 1, y: 0, rotateX: 0, duration: 0.8, ease: 'back.out(1.7)' }, '-=0.6')
+            .to('#domain-com', { opacity: 1, y: 0, rotateX: 0, duration: 0.6, ease: 'power2.out' }, '-=0.4')
+            .to('.domain-ultra', { textShadow: '0 0 20px rgba(0, 243, 255, 0.8), 0 0 40px rgba(0, 243, 255, 0.5), 0 0 60px rgba(0, 243, 255, 0.3)', duration: 1, ease: 'power2.inOut' })
+            .to('.domain-guide', { textShadow: '0 0 20px rgba(188, 19, 254, 0.8), 0 0 40px rgba(188, 19, 254, 0.5), 0 0 60px rgba(188, 19, 254, 0.3)', duration: 1, ease: 'power2.inOut' }, '-=0.8')
+            .to('.domain-ai', { textShadow: '0 0 20px rgba(255, 0, 110, 0.8), 0 0 40px rgba(255, 0, 110, 0.5), 0 0 60px rgba(255, 0, 110, 0.3)', duration: 1, ease: 'power2.inOut' }, '-=0.8')
+            .to('#intro-status', { opacity: 1, duration: 0.5 })
+            .to('#intro-progress', { opacity: 1, duration: 0.5 }, '-=0.3')
+            .to('#intro-progress-bar', { width: '100%', duration: 3, ease: 'power2.inOut', onUpdate: function() { const progress = Math.round(this.progress() * 100); const status = document.getElementById('intro-status'); if (progress < 30) status.textContent = 'Initializing System...'; else if (progress < 60) status.textContent = 'Loading Neural Networks...'; else if (progress < 90) status.textContent = 'Preparing Interface...'; else status.textContent = 'Ready'; } }, '-=0.3')
+            .add(() => { const burstContainer = document.getElementById('burst-container'); for (let i = 0; i < 50; i++) { const particle = document.createElement('div'); particle.className = 'burst-particle'; particle.style.left = '50%'; particle.style.top = '50%'; particle.style.background = i % 2 === 0 ? '#00f3ff' : '#bc13fe'; burstContainer.appendChild(particle); const angle = (Math.PI * 2 * i) / 50; const velocity = 100 + Math.random() * 200; gsap.to(particle, { x: Math.cos(angle) * velocity, y: Math.sin(angle) * velocity, opacity: 0, scale: 0, duration: 1, ease: 'power2.out', onComplete: () => particle.remove() }); } })
+            .to('#intro-sequence', { opacity: 0, scale: 1.1, duration: 0.8, ease: 'power2.in', onComplete: () => { document.getElementById('intro-sequence').style.visibility = 'hidden'; initMainInterface(); } });
+
+        function initMainInterface() {
+            const mainInterface = document.getElementById('main-interface');
+            mainInterface.style.visibility = 'visible';
+            const mainTimeline = gsap.timeline();
+            mainTimeline
+                .to('#main-interface', { opacity: 1, duration: 0.5 })
+                .to('#cyber-grid', { opacity: 1, duration: 1 }, '-=0.3')
+                .to(['#orb-1', '#orb-2', '#orb-3'], { opacity: 0.4, duration: 1, stagger: 0.2 }, '-=0.8')
+                .to('#brain-canvas', { opacity: 1, scale: 1, duration: 1.2, ease: 'elastic.out(1, 0.5)' }, '-=0.5')
+                .to('#navbar', { y: 0, duration: 0.8, ease: 'power3.out' }, '-=1')
+                .to('.hero-badge', { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.7)' }, '-=0.6')
+                .to('.hero-title-line', { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: 'power3.out' }, '-=0.4')
+                .to('.hero-subtitle', { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6')
+                .to('.search-wrapper', { y: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, '-=0.6')
+                .to('.search-btn', { scale: 1, duration: 0.5, ease: 'back.out(1.7)' }, '-=0.4')
+                .to('.feature-tag', { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power3.out' }, '-=0.4')
+                .to(['.btn-primary', '.btn-secondary'], { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power3.out' }, '-=0.4')
+                .to('#main-card', { scale: 1, opacity: 1, duration: 1, ease: 'power3.out' }, '-=0.8')
+                .to('#animated-border', { opacity: 1, duration: 0.5 }, '-=0.5')
+                .to('#neon-line', { opacity: 1, duration: 0.5 }, '-=0.3')
+                .to('.course-card', { x: 0, opacity: 1, duration: 0.6, stagger: 0.15, ease: 'power3.out' }, '-=0.4')
+                .to('.scroll-indicator', { y: 0, opacity: 0.5, duration: 0.6, ease: 'power3.out' }, '-=0.3');
+
+            initBrain();
+            initParticles();
+            initCursorGlow();
+        }
+
+        // Three.js Brain - with error handling
+        function initBrain() {
+            try {
+                if (typeof THREE === 'undefined') {
+                    console.warn('Three.js not loaded');
+                    return;
+                }
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                const canvas = document.getElementById('brain-canvas');
+                if (!canvas) return;
+
+                function resizeCanvas() { 
+                    const size = Math.min(600, window.innerWidth * 0.8); 
+                    renderer.setSize(size, size); 
+                    canvas.style.width = size + 'px'; 
+                    canvas.style.height = size + 'px'; 
+                }
+                resizeCanvas();
+                canvas.appendChild(renderer.domElement);
+
+                const brainGroup = new THREE.Group();
+                const geometry1 = new THREE.IcosahedronGeometry(2, 2);
+                const material1 = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.3 });
+                const sphere1 = new THREE.Mesh(geometry1, material1);
+                brainGroup.add(sphere1);
+
+                const geometry2 = new THREE.IcosahedronGeometry(1.5, 2);
+                const material2 = new THREE.MeshBasicMaterial({ color: 0xbc13fe, wireframe: true, transparent: true, opacity: 0.2 });
+                const sphere2 = new THREE.Mesh(geometry2, material2);
+                brainGroup.add(sphere2);
+
+                const particlesGeo = new THREE.BufferGeometry();
+                const particlesCount = 1500;
+                const posArray = new Float32Array(particlesCount * 3);
+                for(let i = 0; i < particlesCount * 3; i++) { posArray[i] = (Math.random() - 0.5) * 8; }
+                particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+                const particlesMat = new THREE.PointsMaterial({ size: 0.03, color: 0x00f3ff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
+                const particles = new THREE.Points(particlesGeo, particlesMat);
+                brainGroup.add(particles);
+                scene.add(brainGroup);
+                camera.position.z = 5;
+
+                let mouseX = 0;
+                let mouseY = 0;
+                document.addEventListener('mousemove', (e) => { mouseX = (e.clientX / window.innerWidth) * 2 - 1; mouseY = -(e.clientY / window.innerHeight) * 2 + 1; });
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    sphere1.rotation.y += 0.003;
+                    sphere1.rotation.x += 0.001;
+                    sphere2.rotation.y -= 0.002;
+                    sphere2.rotation.x -= 0.001;
+                    particles.rotation.y += 0.001;
+                    brainGroup.rotation.y += mouseX * 0.01;
+                    brainGroup.rotation.x += mouseY * 0.01;
+                    const time = Date.now() * 0.001;
+                    sphere1.scale.setScalar(1 + Math.sin(time) * 0.1);
+                    sphere2.scale.setScalar(1 + Math.sin(time * 1.5) * 0.15);
+                    renderer.render(scene, camera);
+                }
+                animate();
+                window.addEventListener('resize', () => { resizeCanvas(); camera.aspect = 1; camera.updateProjectionMatrix(); });
+            } catch (e) {
+                console.error('Brain animation error:', e);
+            }
+        }
+
+        function initParticles() {
+            const container = document.getElementById('particles-container');
+            if (!container) return;
+            function createParticle() {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = '100%';
+                p.style.animation = `float-up ${5 + Math.random() * 5}s linear forwards`;
+                container.appendChild(p);
+                setTimeout(() => p.remove(), 10000);
+            }
+            setInterval(createParticle, 300);
+            for(let i = 0; i < 20; i++) setTimeout(createParticle, i * 100);
+            const style = document.createElement('style');
+            style.textContent = `@keyframes float-up { to { transform: translateY(-100vh) translateX(${Math.random() * 100 - 50}px); opacity: 0; } }`;
+            document.head.appendChild(style);
+        }
+
+        function initCursorGlow() {
+            const cursorGlow = document.getElementById('cursor-glow');
+            if (!cursorGlow) return;
+            // Disable on touch devices
+            if ('ontouchstart' in window) return;
+            document.addEventListener('mousemove', (e) => { 
+                cursorGlow.style.opacity = '1'; 
+                cursorGlow.style.left = e.clientX - 200 + 'px'; 
+                cursorGlow.style.top = e.clientY - 200 + 'px'; 
+            });
+        }
+
+        function handleSearch() {
+            const btn = document.querySelector('.search-btn');
+            if (btn && typeof gsap !== 'undefined') {
+                gsap.to(btn, { scale: 0.9, duration: 0.1, yoyo: true, repeat: 1 });
+            }
+        }
+
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (!navbar) return;
+            if (window.scrollY > 50) { navbar.classList.add('py-2'); navbar.classList.remove('py-4'); }
+            else { navbar.classList.add('py-4'); navbar.classList.remove('py-2'); }
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) { target.scrollIntoView({ behavior: 'smooth' }); }
+            });
+        });
+    </script>
+</body>
+</html>
